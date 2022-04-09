@@ -1,5 +1,11 @@
 ## 核酸截图OCR
 
+前端 Vue2
+
+后端 Flask
+
+OCR：https://github.com/JaidedAI/EasyOCR
+
 #### 依赖
 
 ```shell
