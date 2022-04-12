@@ -7,6 +7,10 @@ import xlwt
 import datetime
 
 
+fnum = 0
+fdone = 0
+
+
 def foldread(prepath: str):
     print('开始寻找图片目录')
     filetype = ['jpg', 'png']
@@ -32,6 +36,7 @@ def f_imgread(flist):
     mis = []
     reader = easyocr.Reader(['ch_sim', 'en'])  # this needs to run only once to load the model into memory
     resi = []
+    global fdone
     for f in flist:
         resj = [f]
         img = cv2.imdecode(np.asarray(bytearray(flist[f].read()), dtype="uint8"), cv2.IMREAD_COLOR)
@@ -62,6 +67,7 @@ def f_imgread(flist):
             resi.append(resj)
         else:
             mis.append(resj)
+        fdone = fdone + 1
     res.append(resi)
     return res, mis
 
@@ -137,14 +143,24 @@ def start_recognition(files):
     # path = 'imgs'
     # foldpath = foldread(path)
     # res, mis = imgread(foldpath)
+    global fnum
+    global fdone
+    fnum = len(files)
+    fdone = 0
     try:
         res, mis = f_imgread(files)
         if mis:
             print('存在异常检测结果', mis)
         info = ['图片路径', '类型', '姓名', '采样时间', '检测结果']
         Toxls(res, mis, info)
+        return res[0], mis, info
     except Exception as e:
         print(e)
+        return None, None, None
+
+
+def get_prog(proc_id):
+    return fdone / fnum
 
 
 # if __name__ == '__main__':
