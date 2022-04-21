@@ -1,10 +1,26 @@
 ## 核酸截图OCR
 
-- 前端 `Vue2`
+Prerequisite: `Conda`, and `Cuda` (if wants GPU enabled)
 
-- 后端 `Flask`
+Front-end: `Vue2` https://github.com/Song-Gq/shanghai-nucleic-acid-ocr-vue
 
-- OCR https://github.com/JaidedAI/EasyOCR
+Back-end: `Flask` https://github.com/Song-Gq/shanghai-nucleic-acid-ocr
+
+OCR-model: https://github.com/JaidedAI/EasyOCR
+
+#### TODOLIST
+
+- [ ] enable deployment mode
+- [x] client token
+- [x] disable excess file size and types
+- [x] export to excel interface
+- [x] delete expired excel files on server
+- [x] web table for needing attention samples
+- [ ] recognition result roboustness problem
+- [ ] running efficiency on cpu
+- [x] list.index() to fuzz_index()
+- [x] choose folder to upload
+- [ ] batch delete
 
 #### 依赖
 
@@ -13,10 +29,6 @@ conda create -n ocr-sample-flask python=3.6
 conda activate ocr-sample-flask
 pip install easyocr
 pip install flask flask_cors xlwt
-
-(Optional)
-cd EasyOCR-master
-python setup.py install
 ```
 
 #### 识别模型
