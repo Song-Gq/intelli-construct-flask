@@ -1,6 +1,8 @@
 ## 核酸截图OCR
 
-Prerequisite: `Conda`, and `Cuda` (if wants GPU enabled)
+Prerequisite: `Conda`, 
+
+If wants GPU enabled: `Cuda`, `CuDNN` `Pytorch(with cuda)`
 
 Front-end: `Vue2` https://github.com/Song-Gq/shanghai-nucleic-acid-ocr-vue
 
