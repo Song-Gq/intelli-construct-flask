@@ -40,15 +40,15 @@ def check_expired_user():
                     #                 .format(v_id, key, user_list[key]))
 
 
-def allocate_id():
-    with open('ids.json', 'r') as f:
-        j = json.load(f)
-    j[0]['new_id'] = j[0]['new_id'] + 1
-    if j[0]['new_id'] > 1000000:
-        j[0]['new_id'] = 1
-    with open('ids.json', 'w') as f:
-        json.dump(j, f)
-    return j[0]['new_id']
+def allocate_id(json_var):
+    newid = json_var[0]['new_id'] + 1
+    for u in json_var[1]['user_list']:
+        uid = int(u)
+        if uid >= newid:
+            newid = uid + 1
+    if newid > 1000000:
+        return 1
+    return newid
 
 
 # 获取token，有效时间1h
@@ -59,7 +59,8 @@ def generate_auth_token(expiration=3600):
             j = json.load(f)
             user_list = j[1]['user_list']
             if len(user_list) < max_user_num:
-                user = allocate_id()
+                user = allocate_id(j)
+                j[0]['new_id'] = user
                 s = Serializer(app.config['SECRET_KEY'], expires_in=expiration)
                 t = s.dumps({'id': user})
                 with open('ids.json', 'w') as f_w:

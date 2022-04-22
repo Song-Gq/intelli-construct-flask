@@ -11,6 +11,7 @@ from flask import send_file
 
 fnum_dict = {}
 fdone_dict = {}
+fstatus_dict = {}
 
 
 def fuzz_index(in_list, target_str):
@@ -18,21 +19,21 @@ def fuzz_index(in_list, target_str):
     return target_list[0]
 
 
-def foldread(prepath: str):
-    print('开始寻找图片目录')
-    filetype = ['jpg', 'png']
-    foldname = []
-
-    def bfs(prepath, foldname):
-        if filetype[0] in os.listdir(prepath)[0] or filetype[1] in os.listdir(prepath)[0]:
-            foldname.append(prepath[:])
-            return
-        for k, filename in enumerate(os.listdir(prepath)):
-            curpath = prepath + './' + filename
-            bfs(curpath, foldname)
-
-    bfs(prepath, foldname)
-    return foldname
+# def foldread(prepath: str):
+#     print('开始寻找图片目录')
+#     filetype = ['jpg', 'png']
+#     foldname = []
+#
+#     def bfs(prepath, foldname):
+#         if filetype[0] in os.listdir(prepath)[0] or filetype[1] in os.listdir(prepath)[0]:
+#             foldname.append(prepath[:])
+#             return
+#         for k, filename in enumerate(os.listdir(prepath)):
+#             curpath = prepath + './' + filename
+#             bfs(curpath, foldname)
+#
+#     bfs(prepath, foldname)
+#     return foldname
 
 
 def format_time(t_str):
@@ -52,6 +53,7 @@ def format_time(t_str):
 
 # 从文件列表中读取图片,识别图片，[姓名，采样和检测，采样、检测结果，日期，来源？]
 def f_imgread(flist, proc_id):
+    fstatus_dict[proc_id] = True
     print('开始读取图片并识别')
     info = ['类型', '姓名', '采样时间', '检测结果']
     res = []
@@ -167,14 +169,16 @@ def Toxls(res, mis, info, proc_id):
 
     # curr_time = datetime.datetime.now().strftime("%Y-%m-%d %X")
     excel_filename = str(proc_id)
-    workbook.save("out_excel/{}.xlsx".format(excel_filename))
-    print("生成检测报告: out_excel/{}.xlsx".format(excel_filename))
+    workbook.save("out_excel/{}.xls".format(excel_filename))
+    print("生成检测报告: out_excel/{}.xls".format(excel_filename))
 
 
 def start_recognition(files, proc_id):
     # path = 'imgs'
     # foldpath = foldread(path)
     # res, mis = imgread(foldpath)
+    # recognition not started
+    fstatus_dict[proc_id] = False
     fnum_dict[proc_id] = len(files)
     fdone_dict[proc_id] = 0
     try:
@@ -185,16 +189,24 @@ def start_recognition(files, proc_id):
         Toxls(res, mis, info, proc_id)
         fnum_dict.pop(proc_id)
         fdone_dict.pop(proc_id)
+        fstatus_dict.pop(proc_id)
         return res[0], mis
     except Exception as e:
         print("start_recognition(): {}".format(e))
         fnum_dict.pop(proc_id)
         fdone_dict.pop(proc_id)
+        fstatus_dict.pop(proc_id)
         return None, None
 
 
 def get_prog(proc_id):
     try:
+        if proc_id not in fnum_dict.keys():
+            # token valid but upload not done
+            return -2
+        if not fstatus_dict[proc_id]:
+            # recognition not started
+            return -2
         if fnum_dict[proc_id] == 0:
             return -1
         return fdone_dict[proc_id] / fnum_dict[proc_id]
@@ -204,11 +216,11 @@ def get_prog(proc_id):
 
 
 def get_excel(proc_id):
-    file_path = "out_excel/{}.xlsx".format(proc_id)
+    file_path = "out_excel/{}.xls".format(proc_id)
     if os.path.exists(file_path):
         curr_time = datetime.datetime.now().strftime("%Y-%m-%d %X")
         return send_file(file_path, as_attachment=True,
-                         attachment_filename="核酸检测识别报告-{}.xlsx".format(curr_time))
+                         attachment_filename="核酸检测识别报告-{}.xls".format(curr_time))
     return None
 
 
