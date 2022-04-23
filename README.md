@@ -23,6 +23,7 @@ OCR-model: https://github.com/JaidedAI/EasyOCR
 - [x] list.index() to fuzz_index()
 - [x] choose folder to upload
 - [ ] batch delete
+- [x] enable HTTPS
 
 #### 依赖
 
@@ -78,6 +79,26 @@ $ python main.py
       location / {
           include uwsgi_params;
           uwsgi_pass 127.0.0.1:5000; #uwsgi端口
+       }
+  }
+  ```
+
+  `HTTPS`配置
+
+  ```nginx
+  server {
+      listen 443 ssl; #外部HTTPS访问端口
+      server_name ocr.gqsong.xyz;
+      ssl_certificate ocr.gqsong.xyz_bundle.crt;
+      ssl_certificate_key ocr.gqsong.xyz.key;
+      ssl_session_timeout 5m;
+      ssl_protocols TLSv1.2 TLSv1.3;
+      ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
+      ssl_prefer_server_ciphers on;
+      location / {
+          include uwsgi_params;
+          uwsgi_pass 127.0.0.1:5000; #uwsgi端口
+          client_max_body_size 20m;
        }
   }
   ```
