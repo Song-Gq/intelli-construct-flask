@@ -165,4 +165,5 @@ def fallback(fallback_url):  # Vue Router 的 mode 为 'hash' 时可移除该方
 
 if __name__ == '__main__':
     # webbrowser.open('http://127.0.0.1:5000')
-    app.run(host="0.0.0.0", debug=False, port=5000)
+    # app.run(host="0.0.0.0", debug=False, port=5000)
+    app.run(debug=False)

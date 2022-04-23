@@ -27,10 +27,10 @@ OCR-model: https://github.com/JaidedAI/EasyOCR
 #### 依赖
 
 ```shell
-conda create -n ocr-sample-flask python=3.6
-conda activate ocr-sample-flask
-pip install easyocr
-pip install flask flask_cors xlwt
+$ conda create -n ocr-sample-flask python=3.6
+$ conda activate ocr-sample-flask
+$ pip install easyocr
+$ pip install flask flask_cors xlwt
 ```
 
 #### 识别模型
@@ -57,21 +57,45 @@ pip install flask flask_cors xlwt
 
 #### 运行
 
-```
-cd ocr-sample-flask
-python main.py
+```shell
+$ cd ocr-sample-flask
+$ python main.py
 ```
 
 通过浏览器访问 http://127.0.0.1:5000
 
 - 初次识别可能会自动下载模型，下载完成后可能会需要一些时间进行处理
-
 - 输出excel文件在代码根目录下
+
+#### 部署
+
+- 请自行配置`Nginx`，`/etc/nginx/conf.d/`
+
+  ```nginx
+  server {
+      listen 8888;
+      server_name localhost;
+      location / {
+          include uwsgi_params;
+          uwsgi_pass 127.0.0.1:5000;
+       }
+  }
+  ```
+
+- `uwsgi`配置文件已包含在代码根目录，端口5000
+
+```shell
+$ sudo nginx
+$ uwsgi config.ini
+$ sudo nginx -s reload
+```
+
+- 通过浏览器访问http://127.0.0.1:8888/
 
 #### (Optional) 生成可执行文件
 
-```
-pip install pyinstaller
-pyinstaller -D main.py
+```shell
+$ pip install pyinstaller
+$ pyinstaller -D main.py
 ```
 
