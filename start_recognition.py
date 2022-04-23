@@ -1,3 +1,5 @@
+import json
+
 import easyocr
 import os
 import cv2
@@ -52,13 +54,12 @@ def format_time(t_str):
 
 
 # 从文件列表中读取图片,识别图片，[姓名，采样和检测，采样、检测结果，日期，来源？]
-def f_imgread(flist, proc_id):
+def f_imgread(flist, proc_id, reader):
     fstatus_dict[proc_id] = True
     print('开始读取图片并识别')
     info = ['类型', '姓名', '采样时间', '检测结果']
     res = []
     mis = []
-    reader = easyocr.Reader(['ch_sim', 'en'])  # this needs to run only once to load the model into memory
     resi = []
     for f in flist:
         try:
@@ -173,7 +174,7 @@ def Toxls(res, mis, info, proc_id):
     print("生成检测报告: out_excel/{}.xls".format(excel_filename))
 
 
-def start_recognition(files, proc_id):
+def start_recognition(files, proc_id, reader):
     # path = 'imgs'
     # foldpath = foldread(path)
     # res, mis = imgread(foldpath)
@@ -182,7 +183,7 @@ def start_recognition(files, proc_id):
     fnum_dict[proc_id] = len(files)
     fdone_dict[proc_id] = 0
     try:
-        res, mis = f_imgread(files, proc_id)
+        res, mis = f_imgread(files, proc_id, reader)
         if mis:
             print('存在异常检测结果', mis)
         info = ['类型', '姓名', '采样时间', '检测结果']
@@ -190,6 +191,11 @@ def start_recognition(files, proc_id):
         fnum_dict.pop(proc_id)
         fdone_dict.pop(proc_id)
         fstatus_dict.pop(proc_id)
+        with open('statis.json', 'r') as statis_f:
+            j = json.load(statis_f)
+            j[0]['sum'] = j[0]['sum'] + len(files)
+            with open('statis.json', 'w') as statis_fw:
+                json.dump(j, statis_fw)
         return res[0], mis
     except Exception as e:
         print("start_recognition(): {}".format(e))
@@ -203,9 +209,11 @@ def get_prog(proc_id):
     try:
         if proc_id not in fnum_dict.keys():
             # token valid but upload not done
+            # print("proc_id not in fnum_dict.keys()")
             return -2
         if not fstatus_dict[proc_id]:
             # recognition not started
+            # print("not fstatus_dict[proc_id]")
             return -2
         if fnum_dict[proc_id] == 0:
             return -1

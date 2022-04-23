@@ -73,24 +73,43 @@ $ python main.py
 
   ```nginx
   server {
-      listen 8888;
+      listen 8888; #外部HTTP访问端口
       server_name localhost;
       location / {
           include uwsgi_params;
-          uwsgi_pass 127.0.0.1:5000;
+          uwsgi_pass 127.0.0.1:5000; #uwsgi端口
        }
   }
   ```
 
 - `uwsgi`配置文件已包含在代码根目录，端口5000
 
+  ```ini
+  [uwsgi]
+  # 使用nginx时为socket而非http
+  socket = 127.0.0.1:5000 
+  # conda environment
+  home=/home/veocw/anaconda3/envs/ocr-sample-flask
+  # Flask script
+  wsgi-file=/mnt/data/sgq/ocr/ocr-sample-flask/main.py
+  callable=app
+  # 根据GPU Memory调整Process数
+  processes=2
+  threads=16
+  buffer-size=32768
+  master=true
+  stats=/mnt/data/sgq/ocr/ocr-sample-flask/uwsgi.status
+  pidfile=/mnt/data/sgq/ocr/ocr-sample-flask/uwsgi.pid
+  lazy=true
+  ```
+
+- 然后运行，通过浏览器访问http://127.0.0.1:8888/
+
 ```shell
 $ sudo nginx
 $ uwsgi config.ini
 $ sudo nginx -s reload
 ```
-
-- 通过浏览器访问http://127.0.0.1:8888/
 
 #### (Optional) 生成可执行文件
 

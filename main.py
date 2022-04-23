@@ -1,5 +1,6 @@
 import json
 import os
+import easyocr
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -14,6 +15,7 @@ CORS(app)
 max_user_num = 200
 check_expired_user_interval = 20
 check_expired_user_counter = 0
+reader = easyocr.Reader(['ch_sim', 'en'])  # this needs to run only once to load the model into memory
 
 
 def check_expired_user():
@@ -98,7 +100,7 @@ def recognition():
     proc_id = verify_auth_token(t)
     if proc_id is None:
         return "token invalid!", 401
-    res, mis = start_recognition(files, proc_id)
+    res, mis = start_recognition(files, proc_id, reader)
     if res is None:
         return 'No legal screenshots!', 503
     return jsonify({'res': res, 'mis': mis})
@@ -122,6 +124,12 @@ def gettoken():
         return t
     else:
         return 'Too much users now', 503
+
+
+@app.route('/api/getsum', methods=['GET'])
+def getsum():
+    with open('statis.json', 'r') as f:
+        return jsonify(json.load(f)[0]['sum'])
 
 
 @app.route('/api/destroytoken', methods=['DELETE'])
@@ -161,6 +169,12 @@ def fallback(fallback_url):  # Vue Router 的 mode 为 'hash' 时可移除该方
         return app.send_static_file(fallback_url)
     else:
         return app.send_static_file('index.html')
+
+
+# @app.before_first_request
+# def first_request():
+#     app.model = easyocr.Reader(['ch_sim', 'en'])  # this needs to run only once to load the model into memory
+#     return app.model
 
 
 if __name__ == '__main__':
