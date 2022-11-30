@@ -1,10 +1,10 @@
 import json
 import os
-import easyocr
+# import easyocr
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from start_recognition import start_recognition, get_prog, get_excel
+from excavator import excavator_recog
 import webbrowser
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, SignatureExpired, BadSignature
 
@@ -15,7 +15,7 @@ CORS(app)
 max_user_num = 200
 check_expired_user_interval = 20
 check_expired_user_counter = 0
-reader = easyocr.Reader(['ch_sim', 'en'])  # this needs to run only once to load the model into memory
+# reader = easyocr.Reader(['ch_sim', 'en'])  # this needs to run only once to load the model into memory
 
 
 def check_expired_user():
@@ -92,29 +92,47 @@ def index():
     return app.send_static_file('index.html')
 
 
-@app.route('/api/recognition', methods=['POST'])
-def recognition():
+# @app.route('/api/recognition', methods=['POST'])
+# def recognition():
+#     files = request.files.to_dict()
+#     h = request.headers
+#     t = h['token']
+#     proc_id = verify_auth_token(t)
+#     if proc_id is None:
+#         return "token invalid!", 401
+#     res, mis = start_recognition(files, proc_id, reader)
+#     if res is None:
+#         return 'No legal screenshots!', 503
+#     return jsonify({'res': res, 'mis': mis})
+
+
+@app.route('/api/excavator', methods=['POST'])
+def excavator():
     files = request.files.to_dict()
     h = request.headers
     t = h['token']
     proc_id = verify_auth_token(t)
     if proc_id is None:
         return "token invalid!", 401
-    res, mis = start_recognition(files, proc_id, reader)
+    if len(files.keys()) != 1:
+        return 'no legal video or more than 1 video!', 503
+    vid_path = "temp_vid/{}.mp4".format(str(proc_id))
+    list(files.values())[0].save(vid_path)
+    res = excavator_recog(vid_path, proc_id, None)
     if res is None:
-        return 'No legal screenshots!', 503
-    return jsonify({'res': res, 'mis': mis})
+        return 'No legal video!', 503
+    return jsonify({'res': res})
 
 
-@app.route('/api/getprog', methods=['GET'])
-def getprog():
-    p = request.args.to_dict()
-    t = p['token']
-    proc_id = verify_auth_token(t)
-    if proc_id is None:
-        return jsonify(-1)
-    prog = get_prog(proc_id)
-    return jsonify(prog)
+# @app.route('/api/getprog', methods=['GET'])
+# def getprog():
+#     p = request.args.to_dict()
+#     t = p['token']
+#     proc_id = verify_auth_token(t)
+#     if proc_id is None:
+#         return jsonify(-1)
+#     prog = get_prog(proc_id)
+#     return jsonify(prog)
 
 
 @app.route('/api/gettoken', methods=['GET'])
@@ -149,17 +167,17 @@ def destroytoken():
     return 'OK'
 
 
-@app.route('/api/getexcel', methods=['GET'])
-def getexcel():
-    p = request.args.to_dict()
-    t = p['token']
-    proc_id = verify_auth_token(t)
-    if proc_id is None:
-        return "token invalid!", 401
-    f = get_excel(proc_id)
-    if f is not None:
-        return f
-    return jsonify('File has been deleted!')
+# @app.route('/api/getexcel', methods=['GET'])
+# def getexcel():
+#     p = request.args.to_dict()
+#     t = p['token']
+#     proc_id = verify_auth_token(t)
+#     if proc_id is None:
+#         return "token invalid!", 401
+#     f = get_excel(proc_id)
+#     if f is not None:
+#         return f
+#     return jsonify('File has been deleted!')
 
 
 @app.route('/<path:fallback>')
@@ -180,4 +198,4 @@ def fallback(fallback_url):  # Vue Router 的 mode 为 'hash' 时可移除该方
 if __name__ == '__main__':
     # webbrowser.open('http://127.0.0.1:5000')
     # app.run(host="0.0.0.0", debug=False, port=5000)
-    app.run(debug=False)
+    app.run(debug=False, port=5001)
