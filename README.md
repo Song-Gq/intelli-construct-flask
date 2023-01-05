@@ -139,3 +139,14 @@ $ pip install pyinstaller
 $ pyinstaller -D main.py
 ```
 
+#### ~~uwsgi安装问题~~
+
+~~使用如下命令修改源~~
+~~sudo gedit /etc/apt/sources.list~~
+~~在打开的文件中的最后两行加上如下代码，退出并保存：~~
+~~deb http://dk.archive.ubuntu.com/ubuntu/ xenial main~~
+~~deb http://dk.archive.ubuntu.com/ubuntu/ xenial universe~~
+
+~~安装gcc和g+4.8~~ 
+
+~~sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 100~~

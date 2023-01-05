@@ -5,6 +5,7 @@ import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from excavator import excavator_recog
+from wave import wave_recog
 import webbrowser
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, SignatureExpired, BadSignature
 
@@ -117,8 +118,28 @@ def excavator():
     if len(files.keys()) != 1:
         return 'no legal video or more than 1 video!', 503
     vid_path = "temp_vid/{}.mp4".format(str(proc_id))
+    vid_path = os.path.join(os.path.dirname(__file__), vid_path)
     list(files.values())[0].save(vid_path)
     res = excavator_recog(vid_path, proc_id, None)
+    if res is None:
+        return 'No legal video!', 503
+    return jsonify({'res': res})
+
+
+@app.route('/api/wave', methods=['POST'])
+def wave():
+    files = request.files.to_dict()
+    h = request.headers
+    t = h['token']
+    proc_id = verify_auth_token(t)
+    if proc_id is None:
+        return "token invalid!", 401
+    if len(files.keys()) != 1:
+        return 'no legal video or more than 1 video!', 503
+    xlsx_path = "temp_xlsx/{}.xlsx".format(str(proc_id))
+    xlsx_path = os.path.join(os.path.dirname(__file__), xlsx_path)
+    list(files.values())[0].save(xlsx_path)
+    res = wave_recog(xlsx_path, proc_id, None)
     if res is None:
         return 'No legal video!', 503
     return jsonify({'res': res})
