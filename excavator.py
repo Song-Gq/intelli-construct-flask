@@ -72,7 +72,7 @@ def fuzz_index(in_list, target_str):
 #     return res, mis
 
 
-def excavator_recog(file_path, proc_id, models):
+def excavator_recog(file_path, proc_id):
     # path = 'imgs'
     # foldpath = foldread(path)
     # res, mis = imgread(foldpath)

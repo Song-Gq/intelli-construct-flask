@@ -1,30 +1,18 @@
 import json
-import os
-import cv2
-import numpy as np
-import re
-import datetime
-import time
-from flask import send_file
-from alg.wave.wave_svm_detect import wave_start_recog
-from excavator import fuzz_index
+from alg.driverFace.face_model import driver_face_start_recog
 
 fnum_dict = {}
 fdone_dict = {}
 fstatus_dict = {}
 
 
-def wave_recog(xlsx_path, proc_id):
-    # path = 'imgs'
-    # foldpath = foldread(path)
-    # res, mis = imgread(foldpath)
-    # recognition not started
+def driver_face_recog(img_path, equip_pos, proc_id):
     file_num = 1
     fstatus_dict[proc_id] = False
     fnum_dict[proc_id] = file_num
     fdone_dict[proc_id] = 0
     try:
-        res = wave_start_recog(xlsx_path, proc_id)
+        res = driver_face_start_recog(img_path, equip_pos, proc_id)
         fnum_dict.pop(proc_id)
         fdone_dict.pop(proc_id)
         fstatus_dict.pop(proc_id)
@@ -35,7 +23,7 @@ def wave_recog(xlsx_path, proc_id):
                 json.dump(j, statis_fw)
         return res
     except Exception as e:
-        print("wave_recog(): {}".format(e))
+        print("driver_face_recog(): {}".format(e))
         fnum_dict.pop(proc_id)
         fdone_dict.pop(proc_id)
         fstatus_dict.pop(proc_id)

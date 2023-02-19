@@ -1,9 +1,17 @@
+import io
 import json
 import os
+
+import cv2
+from PIL import Image
 # import easyocr
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response, send_file
 from flask_cors import CORS
+
+from driverAction import driver_action_recog
+from driverFace import driver_face_recog
+from equip import equip_recog
 from excavator import excavator_recog
 from wave import wave_recog
 import webbrowser
@@ -16,6 +24,8 @@ CORS(app)
 max_user_num = 200
 check_expired_user_interval = 20
 check_expired_user_counter = 0
+
+
 # reader = easyocr.Reader(['ch_sim', 'en'])  # this needs to run only once to load the model into memory
 
 
@@ -56,7 +66,7 @@ def allocate_id(json_var):
 
 # 获取token，有效时间1h
 def generate_auth_token(expiration=3600):
-    try:
+    # try:
         check_expired_user()
         with open('ids.json', 'r') as f:
             j = json.load(f)
@@ -71,9 +81,9 @@ def generate_auth_token(expiration=3600):
                     json.dump(j, f_w)
                 return t
             return None
-    except Exception as e:
-        print("generate_auth_token(): {}".format(e))
-        return None
+    # except Exception as e:
+    #     print("generate_auth_token(): {}".format(e))
+    #     return None
 
 
 # 解析token，确认用户身份
@@ -120,7 +130,7 @@ def excavator():
     vid_path = "temp_vid/{}.mp4".format(str(proc_id))
     vid_path = os.path.join(os.path.dirname(__file__), vid_path)
     list(files.values())[0].save(vid_path)
-    res = excavator_recog(vid_path, proc_id, None)
+    res = excavator_recog(vid_path, proc_id)
     if res is None:
         return 'No legal video!', 503
     return jsonify({'res': res})
@@ -139,10 +149,91 @@ def wave():
     xlsx_path = "temp_xlsx/{}.xlsx".format(str(proc_id))
     xlsx_path = os.path.join(os.path.dirname(__file__), xlsx_path)
     list(files.values())[0].save(xlsx_path)
-    res = wave_recog(xlsx_path, proc_id, None)
+    res = wave_recog(xlsx_path, proc_id)
     if res is None:
         return 'No legal video!', 503
     return jsonify({'res': res})
+
+
+@app.route('/api/driverFace', methods=['POST'])
+def driver_face():
+    files = request.files.to_dict()
+    h = request.headers
+    t = h['token']
+    proc_id = verify_auth_token(t)
+    if proc_id is None:
+        return "token invalid!", 401
+    if len(files.keys()) != 1:
+        return 'no legal video or more than 1 video!', 503
+    img_path = "temp_img/{}.jpg".format(str(proc_id))
+    img_path = os.path.join(os.path.dirname(__file__), img_path)
+    list(files.values())[0].save(img_path)
+    if request.form.get('equip_pos') == 'false':
+        equip_pos = 0  # left
+    else:
+        equip_pos = 1  # right
+    res = driver_face_recog(img_path, equip_pos, proc_id)
+    if res is None:
+        return 'No legal img!', 503
+    return jsonify({'res': res})
+
+
+@app.route('/api/driverFaceImg', methods=['GET'])
+def driver_face_img():
+    p = request.args.to_dict()
+    t = p['token']
+    proc_id = verify_auth_token(t)
+    if proc_id is None:
+        return "token invalid!", 401
+    return send_file('alg/driverFace/output/face' + str(proc_id) + '.jpg', mimetype='image/jpg')
+
+
+@app.route('/api/driverAction', methods=['POST'])
+def driver_action():
+    files = request.files.to_dict()
+    h = request.headers
+    t = h['token']
+    proc_id = verify_auth_token(t)
+    if proc_id is None:
+        return "token invalid!", 401
+    if len(files.keys()) != 1:
+        return 'no legal json file or more than 1 file!', 503
+    json_path = "temp_json/{}.json".format(str(proc_id))
+    json_path = os.path.join(os.path.dirname(__file__), json_path)
+    list(files.values())[0].save(json_path)
+    res = driver_action_recog(json_path, proc_id)
+    if res is None:
+        return 'No legal json!', 503
+    return jsonify({'res': res})
+
+
+@app.route('/api/equip', methods=['POST'])
+def equip():
+    files = request.files.to_dict()
+    h = request.headers
+    t = h['token']
+    proc_id = verify_auth_token(t)
+    if proc_id is None:
+        return "token invalid!", 401
+    if len(files.keys()) != 1:
+        return 'no legal image file or more than 1 file!', 503
+    img_path = "temp_equip_img/{}.jpg".format(str(proc_id))
+    img_path = os.path.join(os.path.dirname(__file__), img_path)
+    list(files.values())[0].save(img_path)
+    res = equip_recog(img_path, proc_id)
+    if res is None:
+        return 'No legal image!', 503
+    return jsonify({'res': res})
+
+
+@app.route('/api/equipImg', methods=['GET'])
+def equip_img():
+    p = request.args.to_dict()
+    t = p['token']
+    proc_id = verify_auth_token(t)
+    if proc_id is None:
+        return "token invalid!", 401
+    return send_file('alg/equip/output/' + str(proc_id) + '.jpg', mimetype='image/jpg')
 
 
 # @app.route('/api/getprog', methods=['GET'])

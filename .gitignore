@@ -7,3 +7,8 @@
 /temp_xlsx/
 /temp_vid/
 /nohup.out
+/alg/driverFace/output/
+/alg/driverFace/shape_predictor_68_face_landmarks.dat
+/temp_json/
+/temp_equip_img/
+/temp_img/
