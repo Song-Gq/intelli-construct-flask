@@ -6,13 +6,13 @@ fdone_dict = {}
 fstatus_dict = {}
 
 
-def equip_recog(img_path, proc_id):
+def equip_recog(img_id, img_path, proc_id):
     file_num = 1
     fstatus_dict[proc_id] = False
     fnum_dict[proc_id] = file_num
     fdone_dict[proc_id] = 0
     try:
-        res = equip_start_recog(img_path, proc_id)
+        res = equip_start_recog(img_id, img_path, proc_id)
         fnum_dict.pop(proc_id)
         fdone_dict.pop(proc_id)
         fstatus_dict.pop(proc_id)

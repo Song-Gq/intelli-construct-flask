@@ -1,0 +1,9 @@
+yellow
+blue
+red
+orange
+white
+no hat
+other
+vest
+no vest

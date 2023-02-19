@@ -12,3 +12,7 @@
 /temp_json/
 /temp_equip_img/
 /temp_img/
+/alg/equip/font/simhei.ttf
+/alg/equip/img/
+/alg/equip/output/
+/alg/equip/logs/ep050-loss75.476-val_loss82.279.h5

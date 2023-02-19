@@ -29,6 +29,13 @@ check_expired_user_counter = 0
 # reader = easyocr.Reader(['ch_sim', 'en'])  # this needs to run only once to load the model into memory
 
 
+def init_token_list():
+    with open('ids.json', 'w') as f:
+        j = [{'new_id': 0},
+             {'user_list': {}}]
+        json.dump(j, f)
+
+
 def check_expired_user():
     global check_expired_user_counter
     check_expired_user_counter = check_expired_user_counter + 1
@@ -43,7 +50,19 @@ def check_expired_user():
                     with open('ids.json', 'w') as f_w:
                         user_list.pop(key)
                         json.dump(j, f_w)
-                    os.remove("out_excel/{}.xlsx".format(key))
+                    remove_list = ["temp_img/{}.jpg",
+                                   "temp_json/{}.json",
+                                   "temp_vid/{}.mp4",
+                                   "temp_xlsx/{}.xlsx",
+                                   "temp_equip_img/{}.jpg",
+                                   "alg/driverFace/output/face{}.jpg",
+                                   "alg/equip/output/{}.jpg",
+                                   "alg/excavator/output/{}.mp4",
+                                   "alg/excavator/output/{}.txt",
+                                   "alg/wave/output/original{}.jpg",
+                                   "alg/wave/output/processed{}.jpg"]
+                    for item in remove_list:
+                        os.remove(item.format(key))
                     print('user expired: {}'.format(key))
                     print('tokens remaining: {}'.format(len(user_list)))
                 if v_id != key:
@@ -66,24 +85,20 @@ def allocate_id(json_var):
 
 # 获取token，有效时间1h
 def generate_auth_token(expiration=3600):
-    # try:
-        check_expired_user()
-        with open('ids.json', 'r') as f:
-            j = json.load(f)
-            user_list = j[1]['user_list']
-            if len(user_list) < max_user_num:
-                user = allocate_id(j)
-                j[0]['new_id'] = user
-                s = Serializer(app.config['SECRET_KEY'], expires_in=expiration)
-                t = s.dumps({'id': user})
-                with open('ids.json', 'w') as f_w:
-                    user_list[user] = str(t)
-                    json.dump(j, f_w)
-                return t
-            return None
-    # except Exception as e:
-    #     print("generate_auth_token(): {}".format(e))
-    #     return None
+    check_expired_user()
+    with open('ids.json', 'r') as f:
+        j = json.load(f)
+        user_list = j[1]['user_list']
+        if len(user_list) < max_user_num:
+            user = allocate_id(j)
+            j[0]['new_id'] = user
+            s = Serializer(app.config['SECRET_KEY'], expires_in=expiration)
+            t = s.dumps({'id': user})
+            with open('ids.json', 'w') as f_w:
+                user_list[user] = str(t)
+                json.dump(j, f_w)
+            return t
+        return None
 
 
 # 解析token，确认用户身份
@@ -220,7 +235,7 @@ def equip():
     img_path = "temp_equip_img/{}.jpg".format(str(proc_id))
     img_path = os.path.join(os.path.dirname(__file__), img_path)
     list(files.values())[0].save(img_path)
-    res = equip_recog(img_path, proc_id)
+    res = equip_recog(list(files.values())[0].filename, img_path, proc_id)
     if res is None:
         return 'No legal image!', 503
     return jsonify({'res': res})
@@ -310,4 +325,5 @@ def fallback(fallback_url):  # Vue Router 的 mode 为 'hash' 时可移除该方
 if __name__ == '__main__':
     # webbrowser.open('http://127.0.0.1:5000')
     # app.run(host="0.0.0.0", debug=False, port=5000)
+    init_token_list()
     app.run(debug=False, port=5001)

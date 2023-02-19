@@ -1,0 +1,7 @@
+yellow
+blue
+red
+orange
+white
+worker
+vest
