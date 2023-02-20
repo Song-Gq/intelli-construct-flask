@@ -105,6 +105,7 @@ def pose_iou(gt_box, b_box):
     iou = interArea / min(boxAArea, boxBArea)
     return iou
 
+
 def label_yolo(W, image):
     top, left, bottom, right = W
     top = top - 5
@@ -117,6 +118,13 @@ def label_yolo(W, image):
     right = min(image.size[0], np.floor(right + 0.5).astype('int32'))
     A = [top, left, bottom, right]
     return A
+
+
+# def outputdetect(outlist):
+#     compliance = sum(outlist.T(0))
+#     incompliance = sum(outlist.T(1))
+#     total = compliance + incompliance
+#     return total, compliance, incompliance
 
 
 class YOLO(object):
@@ -238,6 +246,7 @@ class YOLO(object):
 
         H = []
         V = []
+        labellist = np.zeros((5,2))
         H_pose, V_pose = label_openpose(df)
         for i, c in list(enumerate(out_classes)):
             predicted_class = self.class_names[c]
@@ -258,55 +267,61 @@ class YOLO(object):
                 IOU_H.append(pose_iou(H_pose[k], H[j][0]))
             if not IOU_H:
                 IOU_H.append(0)
-            I_H = max(IOU_H)
-            if I_H >= 0.5:
-                I_anchor = np.argmax(IOU_H, axis=-1)
-                predicted_class = H[I_anchor][1]
-                # c = self.class_names.index(H[I_anchor][1])
-                if predicted_class=='yellow' or predicted_class=='orange':
-                    label='普通工人'
-                    c = 2
-                elif predicted_class == 'red':
-                    label = '管理人员'
-                    c = 3
-                elif predicted_class == 'blue':
-                    label = '技术人员'
-                    c = 4
-                else :
-                    label = '监理'
-                    c = 5
-            else:
-                label = 'no_hat'
-                c = 1
-
             for j in range(len(V)):
                 IOU_V.append(pose_iou(V_pose[k], V[j]))
             if not IOU_V:
                 IOU_V.append(0)
+            I_H = max(IOU_H)
             I_V = max(IOU_V)
-            if I_V >= 0.5:
-                if label=='no_hat':
-                    label1='不合规：未戴安全帽'
-                    c1=1
-                else:
-                    label1=label
-                    c1=c
+            if I_H >= 0.5:
+                I_anchor = np.argmax(IOU_H, axis=-1)
+                predicted_class = H[I_anchor][1]
+                if predicted_class=='yellow' or predicted_class=='orange':
+                    if I_V >= 0.5:
+                        label='普通工人，合规'
+                        labellist[0][0] += 1
+                        c = 2
+                    else:
+                        label='普通工人，不合规，未穿工作服'
+                        labellist[0][1] += 1
+                        c = 1
+                elif predicted_class == 'red':
+                    if I_V >= 0.5:
+                        label='管理人员，合规'
+                        labellist[1][0] += 1
+                        c = 3
+                    else:
+                        label='管理人员，不合规，未穿工作服'
+                        labellist[1][1] += 1
+                        c = 1
+                elif predicted_class == 'blue':
+                    if I_V >= 0.5:
+                        label='技术人员，合规'
+                        labellist[2][0] += 1
+                        c = 4
+                    else:
+                        label='技术人员，不合规，未穿工作服'
+                        labellist[2][1] += 1
+                        c = 1
+                else :
+                    if I_V >= 0.5:
+                        label='监理，合规'
+                        labellist[3][0] += 1
+                        c = 5
+                    else:
+                        label='监理，不合规，未穿工作服'
+                        labellist[3][1] += 1
+                        c = 1
             else:
-                if label == 'no_hat':
-                    label1 = '不合规：未戴安全帽,未穿工作服'
-                    c1 = 1
-                elif label == '普通工人':
-                    label1 = '不合规：未穿工作服'
-                    c1 = 1
-                else:
-                    label1 = label
-                    c1 = c
+                label = '其他，不合规，未穿工作服'
+                labellist[4][1] += 1
+                c = 1
 
             # worker框
             top, left, bottom, right = H_pose[k]
 
             draw = ImageDraw.Draw(image)
-            label_size = draw.textsize(label1, font)
+            label_size = draw.textsize(label, font)
 
             if top - label_size[1] >= 0:
                 text_origin = np.array([left, top - label_size[1]])
@@ -316,35 +331,17 @@ class YOLO(object):
             for r in range(thickness):
                 draw.rectangle(
                     [left + r, top + r, right - r, bottom - r],
-                    outline=self.colors[c1])
+                    outline=self.colors[c])
             draw.rectangle(
                 [tuple(text_origin), tuple(text_origin + label_size)],
-                fill=self.colors[c1])
-            draw.text(text_origin, str(label1), fill=(0, 0, 0), font=font)
+                fill=self.colors[c])
+            draw.text(text_origin, str(label), fill=(0, 0, 0), font=font)
             del draw
 
-        # for k1 in range(len(H)):
-        #     top, left, bottom, right = H[k1][0]
-        #     label1 = H[k1][1]
-        #     draw = ImageDraw.Draw(image)
-        #     label_size = draw.textsize(label1, font)
-        #
-        #     if top - label_size[1] >= 0:
-        #         text_origin = np.array([left, top - label_size[1]])
-        #     else:
-        #         text_origin = np.array([left, top + 1])
-        #
-        #     for r in range(thickness):
-        #         draw.rectangle(
-        #             [left + r, top + r, right - r, bottom - r],
-        #             outline=self.colors[0])
-        #     draw.rectangle(
-        #         [tuple(text_origin), tuple(text_origin + label_size)],
-        #         fill=self.colors[0])
-        #     draw.text(text_origin, str(label1), fill=(0, 0, 0), font=font)
-        #     del draw
+        # num_total, num_compliance, num_incompliance = outputdetect(labellist)
 
-        return image
+        # 输出几个人，
+        return image, labellist.tolist()
 
     def close_session(self):
         self.sess.close()
@@ -371,9 +368,9 @@ def equip_start_recog(img_id, img_path, proc_id):
         # img = cv2.cvtColor(img0, cv2.COLOR_BGR2RGB)
         # path = 'img/test/' + image
         img0 = Image.open(img_path)
-        res_img = yolo.outcomes(img0, df1)
+        res_img, res_data = yolo.outcomes(img0, df1)
         res_img.save("alg/equip/output/" + str(proc_id) + ".jpg")
-        return 0
+        return res_data
     except Exception as e:
         print("equip_start_recog(): {}".format(e))
-        return -1
+        return None

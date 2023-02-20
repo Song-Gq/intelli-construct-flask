@@ -7,17 +7,17 @@ import warnings
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+
+from detector import build_detector
+from deep_sort import build_tracker
+from utils.draw import draw_boxes
+from utils.parser import get_config
+from utils.log import get_logger
+from utils.io import write_results
 import collections
 
-from .detector import build_detector
-from .deep_sort import build_tracker
-from .utils.draw import draw_boxes
-from .utils.parser import get_config
-from .utils.log import get_logger
-from .utils.io import write_results
 
-
-def drawcurve1(input):
+def drawcurve1( input):
     plt.rcParams['font.sans-serif'] = ['SimHei']
     plt.rcParams['axes.unicode_minus'] = False
     #
@@ -29,15 +29,14 @@ def drawcurve1(input):
     for m in range(len(input)):
         tem = input[m]
         frame.append(tem[0])
-        x.append(tem[1][0][0] + tem[1][0][2] / 2)
+        x.append(tem[1][0][0]+tem[1][0][2]/2)
 
     a.plot(frame, x)
     a.set_title('横坐标变化曲线')
     a.set_xlabel('帧序列')
     a.set_ylabel('横坐标')
-    # plt.savefig('result1.png')
-    # plt.show()
-
+    plt.savefig('result1.png')
+    plt.show()
 
 def drawcurve2(input):
     plt.rcParams['font.sans-serif'] = ['SimHei']
@@ -58,8 +57,8 @@ def drawcurve2(input):
     b.set_title('纵坐标变化曲线')
     b.set_xlabel('帧序列')
     b.set_ylabel('纵坐标')
-    # plt.savefig('result2.png')
-    # plt.show()
+    plt.savefig('result2.png')
+    plt.show()
 
 
 def drawcurve3(input):
@@ -74,15 +73,14 @@ def drawcurve3(input):
     for m in range(len(input)):
         tem = input[m]
         frame.append(tem[0])
-        s.append(tem[1][0][2] * tem[1][0][3])
+        s.append(tem[1][0][2]*tem[1][0][3])
 
     c.plot(frame, s)
     c.set_title('识别框大小变化曲线')
     c.set_xlabel('帧序列')
     c.set_ylabel('识别框大小')
-    # plt.savefig('result3.png')
-    # plt.show()
-
+    plt.savefig('result3.png')
+    plt.show()
 
 def statejudge(input):
     n=len(input)
@@ -93,10 +91,10 @@ def statejudge(input):
     A=collections.Counter(input)
     if A['move']>=2:
         print('move')
-        return 1
     else:
         print('static')
-        return 0
+
+
 
 
 class VideoTracker(object):
@@ -141,8 +139,8 @@ class VideoTracker(object):
             os.makedirs(self.args.save_path, exist_ok=True)
 
             # path of saved video and results
-            self.save_video_path = os.path.join(self.args.save_path, str(self.args.proc_id) + ".mp4")
-            self.save_results_path = os.path.join(self.args.save_path, str(self.args.proc_id) + ".txt")
+            self.save_video_path = os.path.join(self.args.save_path, "results.avi")
+            self.save_results_path = os.path.join(self.args.save_path, "results.txt")
 
             # create video writer
             fourcc = cv2.VideoWriter_fourcc(*'MJPG')
@@ -157,8 +155,9 @@ class VideoTracker(object):
         if exc_type:
             print(exc_type, exc_value, exc_traceback)
 
+
+
     def run(self):
-        res = None
         results = []
         mxdifference=[]
         mydifference=[]
@@ -360,7 +359,7 @@ class VideoTracker(object):
                     self.writer.write(ori_im)
 
                 # save results
-                res = write_results(self.save_results_path, results, 'mot')
+                write_results(self.save_results_path, results, 'mot')
 
                 # logging
                 self.logger.info("time: {:.03f}s, fps: {:.03f}, detection numbers: {}, tracking numbers: {}" \
@@ -372,46 +371,34 @@ class VideoTracker(object):
                 break
 
         # 画结果曲线
-        # drawcurve1(results)
-        # drawcurve2(results)
-        # drawcurve3(results)
+        drawcurve1(results)
+        drawcurve2(results)
+        drawcurve3(results)
+
+        print(statelist)
+        statejudge(statelist)
         # for m in range(len(results)):
         #     tem = results[m]
         #     print(tem)
         #     print(tem[0])
         #     print(tem[1])
         #     print(tem[1][0][0])
-        # print(statelist)
-        state = statejudge(statelist)
-        return res, state
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    # parser.add_argument("VIDEO_PATH", type=str)
-    parser.add_argument("--config_detection", type=str, default=os.path.join(os.path.dirname(__file__),
-                                                                             'configs/yolov3.yaml'))
-    parser.add_argument("--config_deepsort", type=str, default=os.path.join(os.path.dirname(__file__),
-                                                                            'configs/deep_sort.yaml'))
+    parser.add_argument("VIDEO_PATH", type=str)
+    parser.add_argument("--config_detection", type=str, default="./configs/yolov3.yaml")
+    parser.add_argument("--config_deepsort", type=str, default="./configs/deep_sort.yaml")
     # parser.add_argument("--ignore_display", dest="display", action="store_false", default=True)
     parser.add_argument("--display", action="store_true")
     parser.add_argument("--frame_interval", type=int, default=1)
     parser.add_argument("--display_width", type=int, default=800)
     parser.add_argument("--display_height", type=int, default=600)
-    parser.add_argument("--save_path", type=str, default=os.path.join(os.path.dirname(__file__), "output/"))
+    parser.add_argument("--save_path", type=str, default="./output/")
     parser.add_argument("--cpu", dest="use_cuda", action="store_false", default=True)
     parser.add_argument("--camera", action="store", dest="cam", type=int, default="-1")
     return parser.parse_args()
-
-
-def excavator_start_recog(vid_path, proc_id):
-    args = parse_args()
-    cfg = get_config()
-    cfg.merge_from_file(args.config_detection)
-    cfg.merge_from_file(args.config_deepsort)
-    args.proc_id = proc_id
-    with VideoTracker(cfg, args, video_path=vid_path) as vdo_trk:
-        return vdo_trk.run()
 
 
 if __name__ == "__main__":
@@ -419,6 +406,7 @@ if __name__ == "__main__":
     cfg = get_config()
     cfg.merge_from_file(args.config_detection)
     cfg.merge_from_file(args.config_deepsort)
+
 
     with VideoTracker(cfg, args, video_path=args.VIDEO_PATH) as vdo_trk:
         vdo_trk.run()

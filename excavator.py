@@ -82,7 +82,7 @@ def excavator_recog(file_path, proc_id):
     fnum_dict[proc_id] = file_num
     fdone_dict[proc_id] = 0
     try:
-        res = excavator_start_recog(file_path, proc_id)
+        res, state = excavator_start_recog(file_path, proc_id)
         # res, mis = f_imgread(files, proc_id, reader)
         # if mis:
         #     print('存在异常检测结果', mis)
@@ -96,7 +96,7 @@ def excavator_recog(file_path, proc_id):
             j[0]['sum'] = j[0]['sum'] + file_num
             with open('statis.json', 'w') as statis_fw:
                 json.dump(j, statis_fw)
-        return res
+        return res, state
     except Exception as e:
         print("excavator_recog(): {}".format(e))
         fnum_dict.pop(proc_id)

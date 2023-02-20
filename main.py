@@ -145,10 +145,10 @@ def excavator():
     vid_path = "temp_vid/{}.mp4".format(str(proc_id))
     vid_path = os.path.join(os.path.dirname(__file__), vid_path)
     list(files.values())[0].save(vid_path)
-    res = excavator_recog(vid_path, proc_id)
+    res, state = excavator_recog(vid_path, proc_id)
     if res is None:
         return 'No legal video!', 503
-    return jsonify({'res': res})
+    return jsonify({'res': res, 'state': state})
 
 
 @app.route('/api/wave', methods=['POST'])
@@ -236,8 +236,8 @@ def equip():
     img_path = os.path.join(os.path.dirname(__file__), img_path)
     list(files.values())[0].save(img_path)
     res = equip_recog(list(files.values())[0].filename, img_path, proc_id)
-    if res is None:
-        return 'No legal image!', 503
+    # if res is None:
+    #     return 'No legal image!', 503
     return jsonify({'res': res})
 
 
